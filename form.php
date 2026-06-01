@@ -144,4 +144,69 @@
                 <div class="input-wrapper">
                     <input type="email" id="email" name="email" 
                            class="<?php echo !empty($errors['email']) ? 'error-input' : ''; ?>" 
-                           value="<?php echo isset($values['email']) ? htmlspecialchars($values
+                           value="<?php echo isset($values['email']) ? htmlspecialchars($values['email']) : ''; ?>" 
+                           placeholder="dev@example.com" required>
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <label for="birthdate">🎂 Дата рождения</label>
+                <div class="input-wrapper">
+                    <input type="date" id="birthdate" name="birthdate" 
+                           class="<?php echo !empty($errors['birthdate']) ? 'error-input' : ''; ?>" 
+                           value="<?php echo isset($values['birthdate']) ? htmlspecialchars($values['birthdate']) : ''; ?>">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <label>⚥ Пол</label>
+                <div class="input-wrapper radio-group <?php echo !empty($errors['gender']) ? 'error-group' : ''; ?>">
+                    <label><input type="radio" name="gender" value="male" <?php echo (isset($values['gender']) && $values['gender'] == 'male') ? 'checked' : ''; ?>> Мужской</label>
+                    <label><input type="radio" name="gender" value="female" <?php echo (isset($values['gender']) && $values['gender'] == 'female') ? 'checked' : ''; ?>> Женский</label>
+                    <label><input type="radio" name="gender" value="other" <?php echo (isset($values['gender']) && $values['gender'] == 'other') ? 'checked' : ''; ?>> Другой</label>
+                    <label><input type="radio" name="gender" value="unspecified" <?php echo (!isset($values['gender']) || $values['gender'] == 'unspecified') ? 'checked' : ''; ?>> Не указан</label>
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <label>💻 Любимые языки *</label>
+                <div class="input-wrapper">
+                    <select name="fav_langs[]" id="fav_langs" multiple size="6" 
+                            class="<?php echo !empty($errors['languages']) ? 'error-input' : ''; ?>">
+                        <?php
+                        $langs_list = ['Pascal', 'C', 'C++', 'JavaScript', 'PHP', 'Python', 'Java', 'Haskell', 'Clojure', 'Prolog', 'Scala', 'Go'];
+                        foreach ($langs_list as $l):
+                            $selected = (isset($values['languages']) && in_array($l, $values['languages'])) ? 'selected' : '';
+                            echo "<option value=\"$l\" $selected>$l</option>";
+                        endforeach;
+                        ?>
+                    </select>
+                    <div class="hint-text">⌘ Удерживайте Ctrl (Cmd) для выбора нескольких языков</div>
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <label for="bio">📝 Биография</label>
+                <div class="input-wrapper">
+                    <textarea id="bio" name="bio" rows="4" 
+                              class="<?php echo !empty($errors['bio']) ? 'error-input' : ''; ?>" 
+                              placeholder="Расскажите о своем опыте..."><?php echo isset($values['bio']) ? htmlspecialchars($values['bio']) : ''; ?></textarea>
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <label>📑 Согласие</label>
+                <div class="input-wrapper checkbox-wrapper <?php echo !empty($errors['contract']) ? 'error-wrapper' : ''; ?>">
+                    <input type="checkbox" id="contractCheck" name="contract_agreed" <?php echo (!empty($values['contract']) && $values['contract'] == 'on') ? 'checked' : ''; ?> required>
+                    <label for="contractCheck">Я ознакомлен(а) с условиями пользовательского соглашения *</label>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button type="submit" class="save-btn">💾 Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>
