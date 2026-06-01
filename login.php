@@ -17,7 +17,6 @@ try {
     die("Ошибка БД: " . $e->getMessage());
 }
 
-// Если уже авторизован – редирект на форму
 if (!empty($_SESSION['login'])) {
     header('Location: index.php');
     exit();
