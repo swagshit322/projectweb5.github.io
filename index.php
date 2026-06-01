@@ -1,6 +1,5 @@
 <?php
-
-// Старт сессии в самом начале до любого вывода
+// Старт сессии в самом начале до любого вывода в браузер
 session_start();
 
 header('Content-Type: text/html; charset=UTF-8');
@@ -25,10 +24,8 @@ try {
 // ---------- Функции валидации ----------
 function validateFullname($fullname) {
     if (empty($fullname)) return 'ФИО обязательно для заполнения';
-    
-    // Используем iconv_strlen вместо mb_strlen для подсчета символов в UTF-8
+    // Исправлено: заменено mb_strlen на iconv_strlen
     if (iconv_strlen($fullname, 'UTF-8') > 150) return 'ФИО не должно превышать 150 символов';
-    
     if (!preg_match('/^[a-zA-Zа-яА-ЯёЁ\s\-]+$/u', $fullname)) {
         preg_match_all('/[^a-zA-Zа-яА-ЯёЁ\s\-]/u', $fullname, $matches);
         return 'ФИО содержит недопустимые символы: ' . implode(', ', array_unique($matches[0]));
@@ -73,7 +70,7 @@ function validateLanguages($languages, $pdo) {
     if (empty($languages)) return 'Выберите хотя бы один язык программирования';
     if (count($languages) > 12) return 'Выбрано слишком много языков (максимум 12)';
     
-    // Исправлено регулярное выражение: экранирован плюс и добавлен решетка для C++ и C#
+    // Исправлено регулярное выражение для C++ и C#
     $invalid = array_filter($languages, fn($l) => !preg_match('/^[a-zA-Z\+\#0-9]+$/', $l));
     if ($invalid) return 'Недопустимые символы в языках: ' . implode(', ', $invalid);
     
@@ -97,7 +94,7 @@ function validateContract($contract) {
     return $contract == 'on' ? null : 'Необходимо подтвердить ознакомление с контрактом';
 }
 
-// ---------- Генерация уникального логина и пароля ----------
+// ---------- Дополнительные утилиты ----------
 function generateUniqueLogin($pdo, $email) {
     $base = explode('@', $email)[0];
     $base = preg_replace('/[^a-z0-9]/i', '', $base);
@@ -126,7 +123,7 @@ function getFieldLabel($field) {
     return $labels[$field] ?? $field;
 }
 
-// ---------- Обработка GET-запроса (показ формы) ----------
+// ---------- Обработка GET-запроса (Показ формы) ----------
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $messages = [];
     $errors = [];
@@ -138,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
         $messages[] = '<div class="success">✅ Данные успешно сохранены!</div>';
         if (!empty($_COOKIE['login']) && !empty($_COOKIE['pass'])) {
             $messages[] = sprintf(
-                '<div class="success">🔐 Для редактирования используйте логин <strong>%s</strong> и пароль <strong>%s</strong>.<br><a href="login.php" style="text-decoration: underline; color: inherit; font-weight: bold;">Войти в личный кабинет</a></div>',
+                '<div class="success">🔐 Для редактирования используйте логин <strong>%s</strong> &nbsp;и пароль <strong>%s</strong>.<br><a href="login.php" style="text-decoration: underline; color: inherit; font-weight: bold;">Войти в личный кабинет</a></div>',
                 htmlspecialchars($_COOKIE['login']),
                 htmlspecialchars($_COOKIE['pass'])
             );
@@ -149,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
 
     $fields = ['fio', 'phone', 'email', 'birthdate', 'gender', 'languages', 'bio', 'contract'];
 
-    // Считываем флаги ошибок и сообщения (Cookies)
+    // Считываем сообщения об ошибках валидации
     foreach ($fields as $field) {
         $errors[$field] = !empty($_COOKIE[$field . '_error']);
         if ($errors[$field] && !empty($_COOKIE[$field . '_error_msg'])) {
@@ -159,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
         }
     }
 
-    // Загружаем значения из кук (предыдущий ввод для неавторизованных)
+    // Загружаем сохраненные значения из Кук для неавторизованных
     foreach ($fields as $field) {
         $cookieName = $field . '_value';
         if (isset($_COOKIE[$cookieName])) {
@@ -174,10 +171,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     }
     if (empty($values['gender'])) $values['gender'] = 'unspecified';
 
-    // Если пользователь авторизован и нет ошибок ввода — подтягиваем свежие данные из БД
-    $isAuthorized = false;
-    if (!empty($_SESSION['login']) && !empty($_SESSION['uid'])) {
-        $isAuthorized = true;
+    // Если пользователь авторизован — берем актуальные данные строго из Базы Данных
+    $isAuthorized = (!empty($_SESSION['login']) && !empty($_SESSION['uid']));
+    if ($isAuthorized) {
         $hasErrors = array_reduce($errors, fn($carry, $err) => $carry || $err, false);
         if (!$hasErrors) {
             $stmt = $pdo->prepare("SELECT * FROM applications WHERE id = ?");
@@ -192,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
                 $values['bio'] = $userData['biography'];
                 $values['contract'] = $userData['contract_agreed'] ? 'on' : '';
                 
-                // Загружаем языки пользователя из связующей таблицы
+                // Извлекаем языки
                 $langStmt = $pdo->prepare("SELECT pl.name FROM application_languages al JOIN programming_languages pl ON al.language_id = pl.id WHERE al.application_id = ?");
                 $langStmt->execute([$_SESSION['uid']]);
                 $values['languages'] = $langStmt->fetchAll(PDO::FETCH_COLUMN);
@@ -203,11 +199,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     include('form.php');
 }
 
-// ---------- Обработка POST-запроса (валидация и сохранение) ----------
+// ---------- Обработка POST-запроса (Запись / Обновление) ----------
 else {
     $has_errors = false;
 
-    // ---- Валидация каждого поля с сохранением в куки ----
+    // Валидация полей
     $fio_err = validateFullname($_POST['fio'] ?? '');
     if ($fio_err) { setcookie('fio_error', '1', time()+86400); setcookie('fio_error_msg', $fio_err, time()+86400); $has_errors = true; }
     setcookie('fio_value', $_POST['fio'] ?? '', time()+365*86400);
@@ -248,20 +244,20 @@ else {
         exit();
     }
 
-    // Очищаем куки ошибок, если валидация пройдена успешна
+    // Удаляем флаги ошибок, если валидация успешна
     foreach (['fio','phone','email','birthdate','gender','languages','bio','contract'] as $field) {
         setcookie($field.'_error', '', time() - 3600);
         setcookie($field.'_error_msg', '', time() - 3600);
     }
 
-    // ---------- Сохранение в БД ----------
     $isAuthorized = (!empty($_SESSION['login']) && !empty($_SESSION['uid']));
 
     try {
         if ($isAuthorized) {
+            // ИСПРАВЛЕНО: Сценарий изменения существующих данных авторизованного юзера
             $userId = $_SESSION['uid'];
-            // Обновление существующей записи авторизованного пользователя
             $pdo->beginTransaction();
+            
             $stmt = $pdo->prepare("UPDATE applications SET fullname=?, phone=?, email=?, birthdate=?, gender=?, biography=?, contract_agreed=? WHERE id=?");
             $stmt->execute([
                 $_POST['fio'],
@@ -274,7 +270,7 @@ else {
                 $userId
             ]);
             
-            // Синхронизация списка языков
+            // Перезаписываем языки программирования
             $delStmt = $pdo->prepare("DELETE FROM application_languages WHERE application_id = ?");
             $delStmt->execute([$userId]);
             
@@ -288,7 +284,7 @@ else {
             $pdo->commit();
             setcookie('save', '1', time()+86400);
         } else {
-            // Регистрация нового пользователя
+            // Сценарий регистрации нового пользователя
             $plainPassword = generateRandomPassword();
             $login = generateUniqueLogin($pdo, $_POST['email']);
             $passwordHash = password_hash($plainPassword, PASSWORD_DEFAULT);
@@ -308,7 +304,6 @@ else {
             ]);
             $newId = $pdo->lastInsertId();
             
-            // Сохранение выбранных языков
             $langStmt = $pdo->prepare("SELECT id FROM programming_languages WHERE name = ?");
             $insStmt = $pdo->prepare("INSERT INTO application_languages (application_id, language_id) VALUES (?, ?)");
             foreach ($languages as $lang) {
@@ -318,7 +313,6 @@ else {
             }
             $pdo->commit();
 
-            // Сохраняем в куки для однократного показа
             setcookie('login', $login, time()+86400);
             setcookie('pass', $plainPassword, time()+86400);
             setcookie('save', '1', time()+86400);
