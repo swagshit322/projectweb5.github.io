@@ -16,6 +16,35 @@
             justify-content: center;
             align-items: center;
         }
+        .top-bar {
+            width: 100%;
+            max-width: 980px;
+            text-align: right;
+            margin-bottom: 1rem;
+        }
+        .auth-btn {
+            background: #2c3e2f;
+            color: #faf6eb;
+            padding: 0.6rem 1.4rem;
+            border-radius: 2rem;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-block;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .auth-btn:hover {
+            background: #3d5641;
+            transform: translateY(-1px);
+        }
+        .logout-btn {
+            background: #c9772e;
+            color: white;
+        }
+        .logout-btn:hover {
+            background: #b06522;
+        }
         .form-container {
             max-width: 980px;
             width: 100%;
@@ -58,9 +87,6 @@
         .save-btn { background: linear-gradient(105deg, #2c3e2f, #1f2e22); border: none; padding: 0.85rem 2.5rem; font-size: 1rem; font-weight: 600; border-radius: 3rem; color: #fef6e8; cursor: pointer; transition: all 0.25s; }
         .save-btn:hover { transform: translateY(-3px); background: linear-gradient(105deg, #3e5a41, #2b4230); box-shadow: 0 18px 28px -14px rgba(0, 0, 0, 0.35); }
         .hint-text { font-size: 0.7rem; color: #a18f78; margin-top: 0.4rem; padding-left: 0.3rem; }
-        .logout-container { width: 100%; max-width: 980px; text-align: right; margin-bottom: 1rem; }
-        .logout-btn { background: #c9772e; color: white; padding: 0.6rem 1.4rem; border-radius: 2rem; text-decoration: none; font-weight: 600; font-size: 0.9rem; display: inline-block; transition: background 0.2s; }
-        .logout-btn:hover { background: #b06522; }
         @media (max-width: 720px) {
             .form-body { padding: 1.5rem; }
             .field-group { flex-direction: column; }
@@ -71,16 +97,18 @@
 </head>
 <body>
 
-<?php if (!empty($_SESSION['login'])): ?>
-    <div class="logout-container">
-        <a href="logout.php" class="logout-btn">🚪 Выйти (<?php echo htmlspecialchars($_SESSION['login']); ?>)</a>
-    </div>
-<?php endif; ?>
+<div class="top-bar">
+    <?php if (!empty($_SESSION['login'])): ?>
+        <a href="logout.php" class="auth-btn logout-btn"> Navarre 🚪 Выйти (<?php echo htmlspecialchars($_SESSION['login']); ?>)</a>
+    <?php else: ?>
+        <a href="login.php" class="auth-btn">🔐 Войти в личный кабинет</a>
+    <?php endif; ?>
+</div>
 
 <div class="form-container">
     <div class="form-header">
         <h1>📄 Регистрационная анкета</h1>
-        <p>Заполните данные о себе — все поля проверяются на сервере</p>
+        <p>Заполните данные о себе или войдите для редактирования прошлых ответов</p>
     </div>
     
     <div class="form-body">
@@ -116,69 +144,4 @@
                 <div class="input-wrapper">
                     <input type="email" id="email" name="email" 
                            class="<?php echo !empty($errors['email']) ? 'error-input' : ''; ?>" 
-                           value="<?php echo isset($values['email']) ? htmlspecialchars($values['email']) : ''; ?>" 
-                           placeholder="dev@example.com" required>
-                </div>
-            </div>
-            
-            <div class="field-group">
-                <label for="birthdate">🎂 Дата рождения</label>
-                <div class="input-wrapper">
-                    <input type="date" id="birthdate" name="birthdate" 
-                           class="<?php echo !empty($errors['birthdate']) ? 'error-input' : ''; ?>" 
-                           value="<?php echo isset($values['birthdate']) ? htmlspecialchars($values['birthdate']) : ''; ?>">
-                </div>
-            </div>
-            
-            <div class="field-group">
-                <label>⚥ Пол</label>
-                <div class="input-wrapper radio-group <?php echo !empty($errors['gender']) ? 'error-group' : ''; ?>">
-                    <label><input type="radio" name="gender" value="male" <?php echo (isset($values['gender']) && $values['gender'] == 'male') ? 'checked' : ''; ?>> Мужской</label>
-                    <label><input type="radio" name="gender" value="female" <?php echo (isset($values['gender']) && $values['gender'] == 'female') ? 'checked' : ''; ?>> Женский</label>
-                    <label><input type="radio" name="gender" value="other" <?php echo (isset($values['gender']) && $values['gender'] == 'other') ? 'checked' : ''; ?>> Другой</label>
-                    <label><input type="radio" name="gender" value="unspecified" <?php echo (!isset($values['gender']) || $values['gender'] == 'unspecified') ? 'checked' : ''; ?>> Не указан</label>
-                </div>
-            </div>
-            
-            <div class="field-group">
-                <label>💻 Любимые языки *</label>
-                <div class="input-wrapper">
-                    <select name="fav_langs[]" id="fav_langs" multiple size="6" 
-                            class="<?php echo !empty($errors['languages']) ? 'error-input' : ''; ?>">
-                        <?php
-                        $langs_list = ['Pascal', 'C', 'C++', 'JavaScript', 'PHP', 'Python', 'Java', 'Haskell', 'Clojure', 'Prolog', 'Scala', 'Go'];
-                        foreach ($langs_list as $l):
-                            $selected = (isset($values['languages']) && in_array($l, $values['languages'])) ? 'selected' : '';
-                            echo "<option value=\"$l\" $selected>$l</option>";
-                        endforeach;
-                        ?>
-                    </select>
-                    <div class="hint-text">⌘ Удерживайте Ctrl (Cmd) для выбора нескольких языков</div>
-                </div>
-            </div>
-            
-            <div class="field-group">
-                <label for="bio">📝 Биография</label>
-                <div class="input-wrapper">
-                    <textarea id="bio" name="bio" rows="4" 
-                              class="<?php echo !empty($errors['bio']) ? 'error-input' : ''; ?>" 
-                              placeholder="Расскажите о своем опыте..."><?php echo isset($values['bio']) ? htmlspecialchars($values['bio']) : ''; ?></textarea>
-                </div>
-            </div>
-            
-            <div class="field-group">
-                <label>📑 Согласие</label>
-                <div class="input-wrapper checkbox-wrapper <?php echo !empty($errors['contract']) ? 'error-wrapper' : ''; ?>">
-                    <input type="checkbox" id="contractCheck" name="contract_agreed" <?php echo (!empty($values['contract']) && $values['contract'] == 'on') ? 'checked' : ''; ?> required>
-                    <label for="contractCheck">Я ознакомлен(а) с условиями пользовательского соглашения *</label>
-                </div>
-            </div>
-            
-            <div class="action-buttons">
-                <button type="submit" class="save-btn">💾 Сохранить</button>
-            </div>
-        </form>
-    </div>
-</div>
-</body>
-</html>
+                           value="<?php echo isset($values['email']) ? htmlspecialchars($values
