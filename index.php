@@ -25,7 +25,10 @@ try {
 // ---------- Функции валидации ----------
 function validateFullname($fullname) {
     if (empty($fullname)) return 'ФИО обязательно для заполнения';
-    if (mb_strlen($fullname) > 150) return 'ФИО не должно превышать 150 символов';
+    
+    // Используем iconv_strlen вместо mb_strlen для подсчета символов в UTF-8
+    if (iconv_strlen($fullname, 'UTF-8') > 150) return 'ФИО не должно превышать 150 символов';
+    
     if (!preg_match('/^[a-zA-Zа-яА-ЯёЁ\s\-]+$/u', $fullname)) {
         preg_match_all('/[^a-zA-Zа-яА-ЯёЁ\s\-]/u', $fullname, $matches);
         return 'ФИО содержит недопустимые символы: ' . implode(', ', array_unique($matches[0]));
