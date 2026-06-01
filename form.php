@@ -99,7 +99,7 @@
 
 <div class="top-bar">
     <?php if (!empty($_SESSION['login'])): ?>
-        <a href="logout.php" class="auth-btn logout-btn"> Navarre 🚪 Выйти (<?php echo htmlspecialchars($_SESSION['login']); ?>)</a>
+        <a href="logout.php" class="auth-btn logout-btn">🚪 Выйти (<?php echo htmlspecialchars($_SESSION['login']); ?>)</a>
     <?php else: ?>
         <a href="login.php" class="auth-btn">🔐 Войти в личный кабинет</a>
     <?php endif; ?>
